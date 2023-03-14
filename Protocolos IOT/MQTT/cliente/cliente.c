@@ -35,6 +35,8 @@ void *keepAliveFunc(void *param) {
     	
     	if (timer%KEEP_ALIVE == 0)
     	{
+	    	//sKeepAlive keepAliveFrame;
+	    	// send keep alive
     		printf("¡¡%i segundos!!\n", timer);	
     	} 
     	else 
@@ -49,7 +51,7 @@ void *keepAliveFunc(void *param) {
 int main(int32_t argc, char *argv[]){ 
 	sCONNACK connackFrame;
 	/* Identifier */
-	pthread_t tid;
+	//pthread_t tid;
 	/* Attributes */
 	pthread_attr_t attr;
 	/* Set the default attributes of the thread*/
@@ -82,7 +84,7 @@ int main(int32_t argc, char *argv[]){
     } 
     printf("Status: Connected to the server..\n\n");
     
-    pthread_create(&tid, &attr, keepAliveFunc, NULL);
+    //pthread_create(&tid, &attr, keepAliveFunc, NULL);
     	
 	sConnect frametoSend = createFrame_Connect(argv[1], strlen(argv[1]));
 	printf("Sending connect request... %lu bytes...\n", sizeof(frametoSend));
@@ -91,6 +93,7 @@ int main(int32_t argc, char *argv[]){
 	sleep(1);
 	printf("... %i bytes... enviados\n\n", len_tx);
 	
+	sleep(1);
 	len_rx = recv(sockfd, &connackFrame, sizeof(connackFrame), 0);		// recv ack
 	printf("[SERVER]\n");
 	printf("Type: %i\n", connackFrame.bFrameType);
@@ -98,7 +101,10 @@ int main(int32_t argc, char *argv[]){
 	printf("Reservado: %i\n", connackFrame.reservado);
 	printf("Return Code: %i\n\n", connackFrame.returnCode);
 		
-	pthread_join(tid, NULL);
+	// Esperar a finalizar el hilo de conexión para terminar el programa
+	//pthread_join(tid, NULL);
+	close(sockfd);
+	prtinf("Connection closed.\n");
     
 	return 0;
 }

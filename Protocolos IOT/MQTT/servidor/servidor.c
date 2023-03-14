@@ -14,33 +14,39 @@ sCONNACK createFrame_ACK() {
 void *readWrite(void *param) {
 	while(1)
 	{
-		for(int i=0; i<10; i++)
+		for(int i=0; i<2; i++)
 		{	
 			if(hosts[i] != 0)
 			{
-				sConnect connectFrame;
-				sCONNACK connackFrame;
-				// read connect
-				int bytes_received = recv(hosts[i], &connectFrame, sizeof(connectFrame), 0);
+		    	pthread_mutex_lock(&socketMutex);
+		    	
+				int bytes_received = recv(hosts[i], &connectFrame, sizeof(connectFrame), 0);	// read connect
 				if (bytes_received == -1) {
 					perror("Nothing to receive\n");
-					break;
-				} else {
-					printf("[CLIENT %i]\n", i+1);
-					printf("Type: %i\n", connectFrame.bFrameType);
-					printf("Size: %i\n", connectFrame.wLen);
-					printf("Cliente ID: %s\n", connectFrame.sClientID);
-					printf("Level protocol: %i\n", connectFrame.bProtocol);
-					printf("Clean session: %i\n", connectFrame.bCleanSession);
-					printf("Keep Alive interval: %i\n\n", connectFrame.wKeepAlive);
 					
-					int bytes_send = send(hosts[i], &connackFrame, sizeof(connackFrame), 0);
-					printf("Sending connack... %i bytes...\n", bytes_send);
+					break;
 				}
+							
+				printf("[CLIENT %i]\n", i+1);
+				printf("Type: %i\n", connectFrame.bFrameType);
+				printf("Size: %i\n", connectFrame.wLen);
+				printf("Cliente ID: %s\n", connectFrame.sClientID);
+				printf("Level protocol: %i\n", connectFrame.bProtocol);
+				printf("Clean session: %i\n", connectFrame.bCleanSession);
+				printf("Keep Alive interval: %i\n\n", connectFrame.wKeepAlive);
+				
+				keepAliveList[idx_KA] = (int)connectFrame.wKeepAlive;						// Add to keep alive list
+				printf("keep_Alive: %i\n\n",keepAliveList[idx_KA]);
 			
+				int bytes_send = send(hosts[i], &connackFrame, sizeof(connackFrame), 0);	// send connack
+				printf("Sending connack... %i bytes...\n", bytes_send);
+				
 				close(hosts[i]);
 				hosts[i] = 0;
 				idx = i;		// Cambiar nuevo tamaño de lista
+				idx_KA++;
+				
+		    	pthread_mutex_unlock(&socketMutex);
 			}
 		}
 	}	
@@ -118,7 +124,7 @@ int main(int32_t argc, char *argv[]){
 		else
 		{    
 			printf("\n\t[NEW] Connection accepted. \n");
-			// ADD CONECTION TO LIST
+			// ADD CONNECTION TO LIST
 			if (hosts[idx] == 0) 
 			{
 				hosts[idx] = connfd;

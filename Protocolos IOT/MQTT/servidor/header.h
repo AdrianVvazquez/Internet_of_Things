@@ -40,8 +40,15 @@ typedef struct {
     uint8_t returnCode;
 }sCONNACK;
 
+sConnect connectFrame;
+sCONNACK connackFrame;
+// FUNCIONES
 sCONNACK createFrame_ACK();
-
-int idx=0, hosts[10]={0};
+// VARIABLES GLOBALES
+int idx=0, hosts[3]={0}, idx_KA=0;
+int  keepAliveList[3]={0};
 struct sockaddr_in servaddr, client; 
+pthread_mutex_t socketMutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 
