@@ -18,7 +18,8 @@
 #define BACKLOG         5                 /* Max. client pending connections  */
 #define BUFF_SIZE		1024
 
-#define CONNECT_TYPE_FRAME 		(0x10)
+#define CONNACK_TYPE_FRAME 		(0x20)
+
 #define TIME_KEEP_ALIVE 		(0x000A)
 #define PROTOCOL_LVL 			(0x04)
 #define CLEAN_SESSION 			(0x02)
@@ -32,4 +33,15 @@ typedef struct {
     uint16_t wKeepAlive;
 }sConnect;
 
-sConnect vfnCreateFrame();
+typedef struct {
+    uint8_t bFrameType;
+    uint16_t wLen;
+    uint8_t reservado;
+    uint8_t returnCode;
+}sCONNACK;
+
+sCONNACK createFrame_ACK();
+
+int idx=0, hosts[10]={0};
+struct sockaddr_in servaddr, client; 
+
