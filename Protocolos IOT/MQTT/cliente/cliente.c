@@ -15,12 +15,15 @@ sConnect createFrame_Connect(char *argv, uint16_t size) {
 	return connectFrame;
 }
 
-sKeepAlive createFrame_KeepAlive() {
-	sKeepAlive connectFrame;
+sPing createFrame_PingRequest() {
+	sPing pingRequestFrame;
 	
-    connectFrame.bFrameType = CONNECT_TYPE_FRAME;
+    pingRequestFrame.bFrameType = MESSAGE_TYPE_FRAME;
+    pingRequestFrame.wLen = 0x0002;
+    pingRequestFrame.reservado = 0x00;
+    pingRequestFrame.returnCode = 0x00;
 	
-	return connectFrame;
+	return pingRequestFrame;
 }
 
 void *keepAliveFunc(void *param) {
@@ -35,8 +38,6 @@ void *keepAliveFunc(void *param) {
     	
     	if (timer%KEEP_ALIVE == 0)
     	{
-	    	//sKeepAlive keepAliveFrame;
-	    	// send keep alive
     		printf("¡¡%i segundos!!\n", timer);	
     	} 
     	else 
@@ -49,7 +50,6 @@ void *keepAliveFunc(void *param) {
 }
 
 int main(int32_t argc, char *argv[]){ 
-	sCONNACK connackFrame;
 	/* Identifier */
 	//pthread_t tid;
 	/* Attributes */
@@ -70,7 +70,6 @@ int main(int32_t argc, char *argv[]){
     }
     
     memset(&servaddr, 0, sizeof(servaddr));
-    
     /* assign IP, PORT */
     servaddr.sin_family = AF_INET; 
     servaddr.sin_addr.s_addr = inet_addr( SERVER_ADDRESS );
@@ -86,25 +85,36 @@ int main(int32_t argc, char *argv[]){
     
     //pthread_create(&tid, &attr, keepAliveFunc, NULL);
     	
-	sConnect frametoSend = createFrame_Connect(argv[1], strlen(argv[1]));
-	printf("Sending connect request... %lu bytes...\n", sizeof(frametoSend));
+	sConnect connectFrame = createFrame_Connect(argv[1], strlen(argv[1]));
+	printf("Sending connect request... %lu bytes...\n", sizeof(connectFrame));
 	
-	len_tx = send(sockfd, &frametoSend, sizeof(frametoSend), 0);	// send connect
+	len_tx = send(sockfd, &connectFrame, sizeof(connectFrame), 0);	// send connect
 	sleep(1);
 	printf("... %i bytes... enviados\n\n", len_tx);
 	
-	sleep(1);
+	sCONNACK connackFrame;
 	len_rx = recv(sockfd, &connackFrame, sizeof(connackFrame), 0);		// recv ack
-	printf("[SERVER]\n");
+	printf("[SERVER] connack\n");
 	printf("Type: %i\n", connackFrame.bFrameType);
 	printf("Size: %i\n", connackFrame.wLen);
 	printf("Reservado: %i\n", connackFrame.reservado);
 	printf("Return Code: %i\n\n", connackFrame.returnCode);
 		
-	// Esperar a finalizar el hilo de conexión para terminar el programa
+	sPing pingRequestFrame = createFrame_PingRequest();
+	printf("Sending ping request... %lu bytes...\n", sizeof(pingRequestFrame));
+	
+	len_tx = send(sockfd, &pingRequestFrame, sizeof(pingRequestFrame), 0);	// send ping request
+	sleep(1);
+	printf("... %i bytes... enviados\n\n", len_tx);
+	
+	sPing pingResponseFrame;
+	len_rx = recv(sockfd, &pingResponseFrame, sizeof(pingResponseFrame), 0);		// recv ack
+	printf("[SERVER] ping response\n");
+	printf("Type: %i\n", pingResponseFrame.bFrameType);
+	printf("Size: %i\n", pingResponseFrame.wLen);
+	printf("Reservado: %i\n", pingResponseFrame.reservado);
+	printf("Return Code: %i\n\n", pingResponseFrame.returnCode);
 	//pthread_join(tid, NULL);
-	close(sockfd);
-	prtinf("Connection closed.\n");
     
 	return 0;
 }

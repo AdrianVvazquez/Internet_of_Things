@@ -11,25 +11,38 @@ sCONNACK createFrame_ACK() {
 	return ACKFrame;
 }
 
+sPing createFrame_PingResponse() {
+	sPing pingResponseFrame;
+	
+    pingResponseFrame.bFrameType = MESSAGE_TYPE_FRAME;
+    pingResponseFrame.wLen = 0x0002;
+    pingResponseFrame.reservado = 0x00;
+    pingResponseFrame.returnCode = 0x01;
+	
+	return pingResponseFrame;
+}
+
 void *readWrite(void *param) {
 	while(1)
 	{
-		for(int i=0; i<2; i++)
+		for(int i=0; i<10; i++)
 		{	
 			if(hosts[i] != 0)
 			{
-		    	pthread_mutex_lock(&socketMutex);
-
-		    	
+				int bytes_received, bytes_send;
 				sConnect connectFrame;
-				int bytes_received = recv(hosts[i], &connectFrame, sizeof(connectFrame), 0);	// read connect
+				sCONNACK connackFrame;
+				sPing pingRequestFrame, pingResponseFrame;
+				
+				// read connect
+				bytes_received = recv(hosts[i], &connectFrame, sizeof(connectFrame), 0);
+				
 				if (bytes_received == -1) {
 					perror("Nothing to receive\n");
-					
 					break;
-				}
-							
-				printf("[CLIENT %i]\n", i+1);
+				} 
+
+				printf("[CLIENT %i] connect\n", i+1);
 				printf("Type: %i\n", connectFrame.bFrameType);
 				printf("Size: %i\n", connectFrame.wLen);
 				printf("Cliente ID: %s\n", connectFrame.sClientID);
@@ -37,18 +50,33 @@ void *readWrite(void *param) {
 				printf("Clean session: %i\n", connectFrame.bCleanSession);
 				printf("Keep Alive interval: %i\n\n", connectFrame.wKeepAlive);
 				
-				keepAliveList[idx_KA] = (int)connectFrame.wKeepAlive;						// Add keep alive to list
-			
-				sCONNACK connackFrame = createFrame_ACK();
-				int bytes_send = send(hosts[i], &connackFrame, sizeof(connackFrame), 0);	// send connack
-				printf("Sending connack... %i bytes...\n", bytes_send);
+				connackFrame = createFrame_ACK();
+				// send ack
+				bytes_send = send(hosts[i], &connackFrame, sizeof(connackFrame), 0);
+				printf("Sending connack... %i bytes... enviados\n\n", bytes_send);
+				
+				// read ping request
+				bytes_received = recv(hosts[i], &pingRequestFrame, sizeof(pingRequestFrame), 0);
+				
+				if (bytes_received == -1) {
+					perror("Nothing to receive\n");
+					break;
+				} 
+
+				printf("[CLIENT %i] ping request\n", i+1);
+				printf("Type: %i\n", pingRequestFrame.bFrameType);
+				printf("Size: %i\n", pingRequestFrame.wLen);
+				printf("Reserved: %i\n", pingRequestFrame.reservado);
+				printf("Return code: %i\n\n", pingRequestFrame.returnCode);
+				
+				pingResponseFrame = createFrame_PingResponse();
+				// send ack
+				bytes_send = send(hosts[i], &pingResponseFrame, sizeof(pingResponseFrame), 0);
+				printf("Sending ping response... %i bytes... enviados\n\n", bytes_send);
 				
 				close(hosts[i]);
 				hosts[i] = 0;
 				idx = i;		// Cambiar nuevo tamaño de lista
-				idx_KA++;
-				
-		    	pthread_mutex_unlock(&socketMutex);
 			}
 		}
 	}	
@@ -126,7 +154,7 @@ int main(int32_t argc, char *argv[]){
 		else
 		{    
 			printf("\n\t[NEW] Connection accepted. \n");
-			// ADD CONNECTION TO LIST
+			// ADD CONECTION TO LIST
 			if (hosts[idx] == 0) 
 			{
 				hosts[idx] = connfd;
