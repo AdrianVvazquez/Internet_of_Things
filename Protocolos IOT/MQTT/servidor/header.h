@@ -40,8 +40,6 @@ typedef struct {
     uint8_t returnCode;
 }sCONNACK;
 
-sConnect connectFrame;
-sCONNACK connackFrame;
 // FUNCIONES
 sCONNACK createFrame_ACK();
 // VARIABLES GLOBALES

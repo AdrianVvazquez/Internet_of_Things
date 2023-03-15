@@ -19,7 +19,9 @@ void *readWrite(void *param) {
 			if(hosts[i] != 0)
 			{
 		    	pthread_mutex_lock(&socketMutex);
+
 		    	
+				sConnect connectFrame;
 				int bytes_received = recv(hosts[i], &connectFrame, sizeof(connectFrame), 0);	// read connect
 				if (bytes_received == -1) {
 					perror("Nothing to receive\n");
@@ -35,9 +37,9 @@ void *readWrite(void *param) {
 				printf("Clean session: %i\n", connectFrame.bCleanSession);
 				printf("Keep Alive interval: %i\n\n", connectFrame.wKeepAlive);
 				
-				keepAliveList[idx_KA] = (int)connectFrame.wKeepAlive;						// Add to keep alive list
-				printf("keep_Alive: %i\n\n",keepAliveList[idx_KA]);
+				keepAliveList[idx_KA] = (int)connectFrame.wKeepAlive;						// Add keep alive to list
 			
+				sCONNACK connackFrame = createFrame_ACK();
 				int bytes_send = send(hosts[i], &connackFrame, sizeof(connackFrame), 0);	// send connack
 				printf("Sending connack... %i bytes...\n", bytes_send);
 				
